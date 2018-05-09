@@ -158,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
                             case "cloudy":
                                 icon = R.drawable.cloudy;
                                 break;
+                            case "rain":
+                                icon = R.drawable.cloud_rain;
+                                break;
                             default:
                                 icon = R.drawable.partly_cloudy_day;
                         }

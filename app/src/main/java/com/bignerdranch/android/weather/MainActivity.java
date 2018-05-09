@@ -1,11 +1,15 @@
 package com.bignerdranch.android.weather;
 
+import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bignerdranch.android.weather.ConnectServer.ApiService;
@@ -18,7 +22,6 @@ import com.bignerdranch.android.weather.Retrofit.WeatherData;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -50,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayoutManager llm;
     private RecyclerAdapter adapter;
 
+    private ProgressBar progressBar;
+    private TextView progressText;
+    private final long timeInMills = 3000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,15 +64,20 @@ public class MainActivity extends AppCompatActivity {
 
         weatherData = new ArrayList<>();
 
-        retrofit = RetrofitBuilder.getRetrofit();
-
-        rv = (RecyclerView)findViewById(R.id.rv);
+        rv = (RecyclerView) findViewById(R.id.rv);
         llm = new LinearLayoutManager(this);
         rv.setLayoutManager(llm);
-        doRequest();
+
+        progressBar = (ProgressBar) findViewById(R.id.progressBar1);
+        progressText = (TextView) findViewById(R.id.progressText);
+
+        ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
+        progressAsyncTask.execute();
     }
 
-    private void doRequest() {
+    public void doRequest() {
+        retrofit = RetrofitBuilder.getRetrofit();
+
         String lng = "28.48";
         String lat = "49.23";
         String apiId = GetPostTemperature.API;
@@ -92,13 +103,13 @@ public class MainActivity extends AppCompatActivity {
 
                     summary = currently.getSummary();
                     iconWeather = currently.getIcon();
-                    temperature = String.valueOf("Now: " + Math.round (currently.getTemperature())+ "°C");
+                    temperature = String.valueOf("Now: " + Math.round(currently.getTemperature()) + "°C");
                     apparentTemperature = String.valueOf("Feels like: "
-                            + Math.round (currently.getApparentTemperature())+ "°C");
+                            + Math.round(currently.getApparentTemperature()) + "°C");
                     date = new java.text.SimpleDateFormat("dd.MM.yyyy")
-                            .format(new java.util.Date (time*1000));
+                            .format(new java.util.Date(time * 1000));
 
-                    switch (iconWeather){
+                    switch (iconWeather) {
                         case "clear-day":
                             icon = R.drawable.clear_day_icon;
                             break;
@@ -124,14 +135,14 @@ public class MainActivity extends AppCompatActivity {
 
                     long timeNext;
                     String iconWeatherNext;
-                    for (int i = 0; i < datum_list.size(); i++){
+                    for (int i = 0; i < datum_list.size(); i++) {
                         Datum_ datum_ = datum_list.get(i);
 
                         summaryNext = datum_.getSummary();
 
                         iconWeatherNext = datum_.getIcon();
 
-                        switch (iconWeatherNext){
+                        switch (iconWeatherNext) {
                             case "clear-day":
                                 iconNext = R.drawable.clear_day_icon;
                                 break;
@@ -151,17 +162,17 @@ public class MainActivity extends AppCompatActivity {
                                 icon = R.drawable.partly_cloudy_day;
                         }
 
-                        temperatureNextMax = String.valueOf("Max: " + Math.round(datum_.getTemperatureMax())+"°C");
-                        temperatureNextMin = String.valueOf("Min: " + Math.round(datum_.getTemperatureMin())+"°C");
+                        temperatureNextMax = String.valueOf("Max: " + Math.round(datum_.getTemperatureMax()) + "°C");
+                        temperatureNextMin = String.valueOf("Min: " + Math.round(datum_.getTemperatureMin()) + "°C");
 
                         apparentTemperatureNextMax = String.valueOf("Feels like: "
-                                + Math.round(datum_.getApparentTemperatureMax())+"°C");
+                                + Math.round(datum_.getApparentTemperatureMax()) + "°C");
                         apparentTemperatureNextMin = String.valueOf("Feels like: "
-                                + Math.round(datum_.getApparentTemperatureMin())+"°C");
+                                + Math.round(datum_.getApparentTemperatureMin()) + "°C");
 
                         timeNext = datum_.getTime();
                         dateNext = new java.text.SimpleDateFormat("dd.MM.yyyy")
-                                .format(new java.util.Date (timeNext*1000));
+                                .format(new java.util.Date(timeNext * 1000));
 
                         weatherData.add(new WeatherData(temperatureNextMax, iconNext, timezone,
                                 summaryNext, apparentTemperatureNextMax, dateNext));
@@ -181,5 +192,35 @@ public class MainActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private class ProgressAsyncTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressBar.setVisibility(View.VISIBLE);
+            progressText.setVisibility(View.VISIBLE);
+            rv.setVisibility(View.GONE);
+            doRequest();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                Thread.sleep(timeInMills);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            progressBar.setVisibility(View.GONE);
+            progressText.setVisibility(View.GONE);
+            rv.setVisibility(View.VISIBLE);
+        }
     }
 }

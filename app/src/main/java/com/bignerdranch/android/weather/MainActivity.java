@@ -1,7 +1,10 @@
 package com.bignerdranch.android.weather;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -57,6 +60,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView progressText;
     private final long timeInMills = 3000;
 
+    private Boolean exit = false;
+
+    private CheckNetworkConnection networkConnection;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,11 +78,31 @@ public class MainActivity extends AppCompatActivity {
         progressBar = (ProgressBar) findViewById(R.id.progressBar1);
         progressText = (TextView) findViewById(R.id.progressText);
 
-        ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
-        progressAsyncTask.execute();
+        connected();
     }
 
-    public void doRequest() {
+//    @Override
+//    public void onBackPressed() {
+//        if (exit) {
+//            finish();
+//        } else {
+//            exit = true;
+//            Toast.makeText(this, "Press Back again to Exit.", Toast.LENGTH_SHORT).show();
+//            new Handler().postDelayed(() -> exit = false, 3 * 1000);
+//        }
+//    }
+
+    private  void connected(){
+        if(!networkConnection.isNetworkConnected(this)){
+            Intent intent = new Intent(this, ConnectionActivity.class);
+            startActivity(intent);
+        }else {
+            ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
+            progressAsyncTask.execute();
+        }
+    }
+
+    private void doRequest() {
         retrofit = RetrofitBuilder.getRetrofit();
 
         String lng = "28.48";

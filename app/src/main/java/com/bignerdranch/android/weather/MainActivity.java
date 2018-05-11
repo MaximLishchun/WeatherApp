@@ -1,6 +1,5 @@
 package com.bignerdranch.android.weather;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -19,6 +18,8 @@ import com.bignerdranch.android.weather.ConnectServer.ApiService;
 import com.bignerdranch.android.weather.ConnectServer.GetPostTemperature;
 import com.bignerdranch.android.weather.ConnectServer.ObjectJSON.Currently;
 import com.bignerdranch.android.weather.ConnectServer.ObjectJSON.Datum_;
+import com.bignerdranch.android.weather.Network.CheckNetworkConnection;
+import com.bignerdranch.android.weather.Network.ConnectionActivity;
 import com.bignerdranch.android.weather.Retrofit.RecyclerAdapter;
 import com.bignerdranch.android.weather.Retrofit.RetrofitBuilder;
 import com.bignerdranch.android.weather.Retrofit.WeatherData;
@@ -81,21 +82,22 @@ public class MainActivity extends AppCompatActivity {
         connected();
     }
 
-//    @Override
-//    public void onBackPressed() {
-//        if (exit) {
-//            finish();
-//        } else {
-//            exit = true;
-//            Toast.makeText(this, "Press Back again to Exit.", Toast.LENGTH_SHORT).show();
-//            new Handler().postDelayed(() -> exit = false, 3 * 1000);
-//        }
-//    }
+    @Override
+    public void onBackPressed() {
+        if (exit) {
+            finish();
+        } else {
+            exit = true;
+            Toast.makeText(this, "Press Back again to Exit.", Toast.LENGTH_SHORT).show();
+            new Handler().postDelayed(() -> exit = false, 3 * 1000);
+        }
+    }
 
     private  void connected(){
         if(!networkConnection.isNetworkConnected(this)){
             Intent intent = new Intent(this, ConnectionActivity.class);
             startActivity(intent);
+            finish();
         }else {
             ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
             progressAsyncTask.execute();

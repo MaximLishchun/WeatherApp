@@ -1,4 +1,4 @@
-package com.bignerdranch.android.weather;
+package com.bignerdranch.android.weather.Network;
 
 
 import android.content.Context;

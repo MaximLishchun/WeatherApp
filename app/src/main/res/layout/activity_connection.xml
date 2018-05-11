@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.bignerdranch.android.weather.ConnectionActivity">
+    tools:context="com.bignerdranch.android.weather.Network.ConnectionActivity">
     <ImageButton
         android:layout_width="50dp"
         android:layout_height="50dp"

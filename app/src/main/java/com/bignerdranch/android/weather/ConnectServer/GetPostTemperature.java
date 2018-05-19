@@ -13,7 +13,7 @@ import java.util.List;
 
 public class GetPostTemperature {
 
-    public static final String API = "7581df654b252869f646133808a27027";
+    public static final String API = "3096287938e03e8633ce35bd56da929e";
     public static final String BASE_URL = "https://api.darksky.net/";
 
     @SerializedName("currently")

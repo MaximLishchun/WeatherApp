@@ -18,4 +18,28 @@ public class WeatherData {
         this.apparentTemperature = apparentTemperature;
         this.time = time;
     }
+
+    public String getTemperature() {
+        return temperature;
+    }
+
+    public int getIcon() {
+        return icon;
+    }
+
+    public String getCityName() {
+        return cityName;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public String getApparentTemperature() {
+        return apparentTemperature;
+    }
+
+    public String getTime() {
+        return time;
+    }
 }

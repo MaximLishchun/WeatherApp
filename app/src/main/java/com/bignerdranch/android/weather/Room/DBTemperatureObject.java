@@ -15,4 +15,19 @@ public class DBTemperatureObject {
     @ColumnInfo(name = "temp")
     public String temp;
 
+    @ColumnInfo(name = "summary")
+    public String summary;
+
+    @ColumnInfo(name = "timezone")
+    public String timezone;
+
+    @ColumnInfo(name = "icon")
+    public int icon;
+
+    @ColumnInfo(name = "apparentTemperature")
+    public String apparentTemperature;
+
+    @ColumnInfo(name = "date")
+    public String date;
+
 }

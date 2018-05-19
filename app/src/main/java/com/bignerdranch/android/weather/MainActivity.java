@@ -2,9 +2,7 @@ package com.bignerdranch.android.weather;
 
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Handler;
-import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,28 +12,29 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bignerdranch.android.weather.ConnectServer.ApiService;
 import com.bignerdranch.android.weather.ConnectServer.GetPostTemperature;
 import com.bignerdranch.android.weather.ConnectServer.ObjectJSON.Currently;
 import com.bignerdranch.android.weather.ConnectServer.ObjectJSON.Datum_;
 import com.bignerdranch.android.weather.Network.CheckNetworkConnection;
 import com.bignerdranch.android.weather.Network.ConnectionActivity;
+import com.bignerdranch.android.weather.Retrofit.OnDoResponse;
 import com.bignerdranch.android.weather.Retrofit.RecyclerAdapter;
-import com.bignerdranch.android.weather.Retrofit.RetrofitBuilder;
+import com.bignerdranch.android.weather.Retrofit.RetrofitConnection;
 import com.bignerdranch.android.weather.Retrofit.WeatherData;
+import com.bignerdranch.android.weather.Room.AppRoom;
+import com.bignerdranch.android.weather.Room.DBTemperatureObject;
+import com.bignerdranch.android.weather.Room.DataBase;
+import com.bignerdranch.android.weather.Room.TemperatureDao;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
 
 
-public class MainActivity extends AppCompatActivity {
 
-    private Retrofit retrofit;
+public class MainActivity extends AppCompatActivity implements OnDoResponse {
+
     private List<WeatherData> weatherData;
 
     private String summary;
@@ -62,8 +61,11 @@ public class MainActivity extends AppCompatActivity {
     private final long timeInMills = 3000;
 
     private Boolean exit = false;
-
     private CheckNetworkConnection networkConnection;
+
+    private DataBase db;
+    private TemperatureDao temperatureDao;
+    private DBTemperatureObject dbTemperatureObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,134 +101,143 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         }else {
+            RetrofitConnection retrofitConnection = new RetrofitConnection();
+            retrofitConnection.setOnDoResponse(this);
             ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
             progressAsyncTask.execute();
         }
     }
 
-    private void doRequest() {
-        retrofit = RetrofitBuilder.getRetrofit();
+    @Override
+    public void doResponse(Response<GetPostTemperature> response) {
+        if (response.isSuccessful()) {
+            GetPostTemperature data = response.body();
+            Currently currently = data.getCurrently();
+            List<Datum_> datum_list = data.getDaily().getData();
+            timezone = data.getTimezone();
 
-        String lng = "28.48";
-        String lat = "49.23";
-        String apiId = GetPostTemperature.API;
+            String iconWeather;
+            long time;
 
-        ApiService apiService = retrofit.create(ApiService.class);
+            time = currently.getTime();
 
-        Call<GetPostTemperature> call = apiService.getMyJSON(apiId, lat, lng);
+            summary = currently.getSummary();
+            iconWeather = currently.getIcon();
+            temperature = String.valueOf("Now: " + Math.round(currently.getTemperature()) + "°C");
+            apparentTemperature = String.valueOf("Feels like: "
+                    + Math.round(currently.getApparentTemperature()) + "°C");
+            date = new java.text.SimpleDateFormat("dd.MM.yyyy")
+                    .format(new java.util.Date(time * 1000));
 
-        call.enqueue(new Callback<GetPostTemperature>() {
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            @Override
-            public void onResponse(Call<GetPostTemperature> call, Response<GetPostTemperature> response) {
-                if (response.isSuccessful()) {
-                    GetPostTemperature data = response.body();
-                    Currently currently = data.getCurrently();
-                    List<Datum_> datum_list = data.getDaily().getData();
-                    timezone = data.getTimezone();
+            switch (iconWeather) {
+                case "clear-day":
+                    icon = R.drawable.clear_day_icon;
+                    break;
+                case "clear-night":
+                    icon = R.drawable.clear_night;
+                    break;
+                case "partly-cloudy-day":
+                    icon = R.drawable.partly_cloudy_day;
+                    break;
+                case "partly-cloudy-night":
+                    icon = R.drawable.partly_cloudy_night;
+                    break;
+                case "rain":
+                    icon = R.drawable.cloud_rain;
+                    break;
+                case "cloudy":
+                    icon = R.drawable.cloudy;
+                    break;
+                default:
+                    icon = R.drawable.partly_cloudy_day;
+            }
+            weatherData.add(new WeatherData(temperature, icon, timezone, summary, apparentTemperature, date));
 
-                    String iconWeather;
-                    long time;
+            long timeNext;
+            String iconWeatherNext;
+            for (int i = 0; i < datum_list.size(); i++) {
+                Datum_ datum_ = datum_list.get(i);
 
-                    time = currently.getTime();
+                summaryNext = datum_.getSummary();
 
-                    summary = currently.getSummary();
-                    iconWeather = currently.getIcon();
-                    temperature = String.valueOf("Now: " + Math.round(currently.getTemperature()) + "°C");
-                    apparentTemperature = String.valueOf("Feels like: "
-                            + Math.round(currently.getApparentTemperature()) + "°C");
-                    date = new java.text.SimpleDateFormat("dd.MM.yyyy")
-                            .format(new java.util.Date(time * 1000));
+                iconWeatherNext = datum_.getIcon();
 
-                    switch (iconWeather) {
-                        case "clear-day":
-                            icon = R.drawable.clear_day_icon;
-                            break;
-                        case "clear-night":
-                            icon = R.drawable.clear_night;
-                            break;
-                        case "partly-cloudy-day":
-                            icon = R.drawable.partly_cloudy_day;
-                            break;
-                        case "partly-cloudy-night":
-                            icon = R.drawable.partly_cloudy_night;
-                            break;
-                        case "rain":
-                            icon = R.drawable.cloud_rain;
-                            break;
-                        case "cloudy":
-                            icon = R.drawable.cloudy;
-                            break;
-                        default:
-                            icon = R.drawable.partly_cloudy_day;
-                    }
-                    weatherData.add(new WeatherData(temperature, icon, timezone, summary, apparentTemperature, date));
-
-                    long timeNext;
-                    String iconWeatherNext;
-                    for (int i = 0; i < datum_list.size(); i++) {
-                        Datum_ datum_ = datum_list.get(i);
-
-                        summaryNext = datum_.getSummary();
-
-                        iconWeatherNext = datum_.getIcon();
-
-                        switch (iconWeatherNext) {
-                            case "clear-day":
-                                iconNext = R.drawable.clear_day_icon;
-                                break;
-                            case "clear-night":
-                                iconNext = R.drawable.clear_night;
-                                break;
-                            case "partly-cloudy-day":
-                                iconNext = R.drawable.partly_cloudy_day;
-                                break;
-                            case "partly-cloudy-night":
-                                iconNext = R.drawable.partly_cloudy_night;
-                                break;
-                            case "cloudy":
-                                icon = R.drawable.cloudy;
-                                break;
-                            case "rain":
-                                icon = R.drawable.cloud_rain;
-                                break;
-                            default:
-                                icon = R.drawable.partly_cloudy_day;
-                        }
-
-                        temperatureNextMax = String.valueOf("Max: " + Math.round(datum_.getTemperatureMax()) + "°C");
-                        temperatureNextMin = String.valueOf("Min: " + Math.round(datum_.getTemperatureMin()) + "°C");
-
-                        apparentTemperatureNextMax = String.valueOf("Feels like: "
-                                + Math.round(datum_.getApparentTemperatureMax()) + "°C");
-                        apparentTemperatureNextMin = String.valueOf("Feels like: "
-                                + Math.round(datum_.getApparentTemperatureMin()) + "°C");
-
-                        timeNext = datum_.getTime();
-                        dateNext = new java.text.SimpleDateFormat("dd.MM.yyyy")
-                                .format(new java.util.Date(timeNext * 1000));
-
-                        weatherData.add(new WeatherData(temperatureNextMax, iconNext, timezone,
-                                summaryNext, apparentTemperatureNextMax, dateNext));
-                        weatherData.add(new WeatherData(temperatureNextMin, iconNext, timezone,
-                                summaryNext, apparentTemperatureNextMin, dateNext));
-                    }
-
-                    adapter = new RecyclerAdapter(weatherData);
-                    rv.setAdapter(adapter);
+                switch (iconWeatherNext) {
+                    case "clear-day":
+                        iconNext = R.drawable.clear_day_icon;
+                        break;
+                    case "clear-night":
+                        iconNext = R.drawable.clear_night;
+                        break;
+                    case "partly-cloudy-day":
+                        iconNext = R.drawable.partly_cloudy_day;
+                        break;
+                    case "partly-cloudy-night":
+                        iconNext = R.drawable.partly_cloudy_night;
+                        break;
+                    case "cloudy":
+                        icon = R.drawable.cloudy;
+                        break;
+                    case "rain":
+                        icon = R.drawable.cloud_rain;
+                        break;
+                    default:
+                        icon = R.drawable.partly_cloudy_day;
                 }
+
+                temperatureNextMax = String.valueOf("Max: " + Math.round(datum_.getTemperatureMax()) + "°C");
+                temperatureNextMin = String.valueOf("Min: " + Math.round(datum_.getTemperatureMin()) + "°C");
+
+                apparentTemperatureNextMax = String.valueOf("Feels like: "
+                        + Math.round(datum_.getApparentTemperatureMax()) + "°C");
+                apparentTemperatureNextMin = String.valueOf("Feels like: "
+                        + Math.round(datum_.getApparentTemperatureMin()) + "°C");
+
+                timeNext = datum_.getTime();
+                dateNext = new java.text.SimpleDateFormat("dd.MM.yyyy")
+                        .format(new java.util.Date(timeNext * 1000));
+
+                weatherData.add(new WeatherData(temperatureNextMax, iconNext, timezone,
+                        summaryNext, apparentTemperatureNextMax, dateNext));
+                weatherData.add(new WeatherData(temperatureNextMin, iconNext, timezone,
+                        summaryNext, apparentTemperatureNextMin, dateNext));
             }
 
-            @Override
-            public void onFailure(Call<GetPostTemperature> call, Throwable throwable) {
-                Toast.makeText(getApplicationContext(),
-                        throwable.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+            adapter = new RecyclerAdapter(weatherData);
+            rv.setAdapter(adapter);
+        }
+    }
+
+    public void saveDataDB(){
+        if(weatherData != null){
+            db = AppRoom.getInstance().getDataBase();
+            temperatureDao = db.getTemperatureDao();
+            for (int i = 0; i < weatherData.size(); i++){
+                dbTemperatureObject = new DBTemperatureObject();
+                dbTemperatureObject.temp = weatherData.get(i).getTemperature();
+                dbTemperatureObject.icon = weatherData.get(i).getIcon();
+                dbTemperatureObject.summary = weatherData.get(i).getSummary();
+                dbTemperatureObject.timezone = weatherData.get(i).getCityName();
+                dbTemperatureObject.apparentTemperature = weatherData.get(i).getApparentTemperature();
+                dbTemperatureObject.date = weatherData.get(i).getTime();
+                temperatureDao.saveTemperature(dbTemperatureObject);
             }
-        });
+        }
+    }
+
+    public void setWeatherNotConnection(){
+        Intent intent = getIntent();
+        if(intent.getIntExtra(ConnectionActivity.DB, ConnectionActivity.CONNECTION_DB) == ConnectionActivity.CONNECTION_DB){
+            List<DBTemperatureObject> dbTemperatureObjects = temperatureDao.getAllTemperature();
+            for (int i = 0; i < dbTemperatureObjects.size(); i++){
+                weatherData.add(new WeatherData(dbTemperatureObjects.get(i).temp, dbTemperatureObjects.get(i).icon, dbTemperatureObjects.get(i).timezone, dbTemperatureObjects.get(i).summary,
+                         dbTemperatureObjects.get(i).apparentTemperature, dbTemperatureObjects.get(i).date));
+            }
+        }
     }
 
     private class ProgressAsyncTask extends AsyncTask<Void, Void, Void> {
+        boolean i = false;
 
         @Override
         protected void onPreExecute() {
@@ -234,11 +245,12 @@ public class MainActivity extends AppCompatActivity {
             progressBar.setVisibility(View.VISIBLE);
             progressText.setVisibility(View.VISIBLE);
             rv.setVisibility(View.GONE);
-            doRequest();
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
+            saveDataDB();
+            setWeatherNotConnection();
             try {
                 Thread.sleep(timeInMills);
             } catch (InterruptedException e) {

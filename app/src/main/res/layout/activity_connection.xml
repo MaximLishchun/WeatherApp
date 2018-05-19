@@ -26,4 +26,10 @@
         android:layout_centerVertical="true"
         android:text="Not connection!"
         android:layout_below="@id/image"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/db"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"/>
 </RelativeLayout>

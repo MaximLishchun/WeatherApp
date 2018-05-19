@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -18,8 +19,12 @@ public class ConnectionActivity extends AppCompatActivity{
     private ImageView imageConnection;
     private ImageButton imageUpdate;
     private TextView textConnection;
+    private Button dbButton;
 
     private Boolean exit = false;
+
+    public static final int CONNECTION_DB = 1;
+    public static final String DB = "db";
 
     private CheckNetworkConnection checkNetworkConnection;
 
@@ -31,6 +36,7 @@ public class ConnectionActivity extends AppCompatActivity{
         imageConnection = (ImageView) findViewById(R.id.image);
         imageUpdate = (ImageButton) findViewById(R.id.update);
         textConnection = (TextView) findViewById(R.id.text);
+        dbButton = (Button) findViewById(R.id.db);
 
         imageConnection.setImageResource(R.drawable.network);
         imageUpdate.setImageResource(R.drawable.update);
@@ -42,13 +48,21 @@ public class ConnectionActivity extends AppCompatActivity{
                         Intent intent = new Intent(v.getContext(), MainActivity.class);
                         startActivity(intent);
                         finish();
-                    }else Toast.makeText(v.getContext(),
+                    }else Toast.makeText(this,
                         "Not connection!",
                         Toast.LENGTH_LONG);
                     break;
+                case R.id.db:
+                    if (checkNetworkConnection.isNetworkConnected(v.getContext())) {
+                        Intent intent = new Intent(v.getContext(), MainActivity.class);
+                        intent.putExtra(DB, CONNECTION_DB);
+                        startActivity(intent);
+                        finish();
+                    }
             }
         };
         imageUpdate.setOnClickListener(onClickListener);
+        dbButton.setOnClickListener(onClickListener);
     }
 
     @Override

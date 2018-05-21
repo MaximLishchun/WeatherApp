@@ -53,7 +53,7 @@ public class ConnectionActivity extends AppCompatActivity{
                         Toast.LENGTH_LONG);
                     break;
                 case R.id.db:
-                    if (checkNetworkConnection.isNetworkConnected(v.getContext())) {
+                    if (!checkNetworkConnection.isNetworkConnected(v.getContext())) {
                         Intent intent = new Intent(v.getContext(), MainActivity.class);
                         intent.putExtra(DB, CONNECTION_DB);
                         startActivity(intent);

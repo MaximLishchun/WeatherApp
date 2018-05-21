@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -82,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
         progressText = (TextView) findViewById(R.id.progressText);
 
         connected();
+        Log.d("onCreate" , "onCreate");
     }
 
     @Override
@@ -96,11 +98,16 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
     }
 
     private  void connected(){
+//        Intent intent = getIntent();
+//        if(intent.getIntExtra(ConnectionActivity.DB, ConnectionActivity.CONNECTION_DB) == ConnectionActivity.CONNECTION_DB){
+//            ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
+//            progressAsyncTask.execute();
+//        }
         if(!networkConnection.isNetworkConnected(this)){
-            Intent intent = new Intent(this, ConnectionActivity.class);
-            startActivity(intent);
+            Intent intentGo = new Intent(this, ConnectionActivity.class);
+            startActivity(intentGo);
             finish();
-        }else {
+        } else {
             RetrofitConnection retrofitConnection = new RetrofitConnection();
             retrofitConnection.setOnDoResponse(this);
             ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
@@ -208,8 +215,8 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
         }
     }
 
-    public void saveDataDB(){
-        if(weatherData != null){
+    public boolean saveDataDB(){
+        if (networkConnection.isNetworkConnected(this)){
             db = AppRoom.getInstance().getDataBase();
             temperatureDao = db.getTemperatureDao();
             for (int i = 0; i < weatherData.size(); i++){
@@ -222,22 +229,31 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
                 dbTemperatureObject.date = weatherData.get(i).getTime();
                 temperatureDao.saveTemperature(dbTemperatureObject);
             }
-        }
+            return true;
+        }else return false;
     }
 
     public void setWeatherNotConnection(){
-        Intent intent = getIntent();
-        if(intent.getIntExtra(ConnectionActivity.DB, ConnectionActivity.CONNECTION_DB) == ConnectionActivity.CONNECTION_DB){
-            List<DBTemperatureObject> dbTemperatureObjects = temperatureDao.getAllTemperature();
-            for (int i = 0; i < dbTemperatureObjects.size(); i++){
-                weatherData.add(new WeatherData(dbTemperatureObjects.get(i).temp, dbTemperatureObjects.get(i).icon, dbTemperatureObjects.get(i).timezone, dbTemperatureObjects.get(i).summary,
-                         dbTemperatureObjects.get(i).apparentTemperature, dbTemperatureObjects.get(i).date));
+        if(!networkConnection.isNetworkConnected(this)){
+            Intent intent = getIntent();
+            if(intent.getIntExtra(ConnectionActivity.DB, ConnectionActivity.CONNECTION_DB) == ConnectionActivity.CONNECTION_DB) {
+                List<DBTemperatureObject> dbTemperatureObjects = temperatureDao.getAllTemperature();
+                for (int i = 0; i < dbTemperatureObjects.size(); i++) {
+                    weatherData.add(new WeatherData(dbTemperatureObjects.get(i).temp, dbTemperatureObjects.get(i).icon, dbTemperatureObjects.get(i).timezone, dbTemperatureObjects.get(i).summary,
+                            dbTemperatureObjects.get(i).apparentTemperature, dbTemperatureObjects.get(i).date));
+                }
             }
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
+        progressAsyncTask.execute();
+    }
+
     private class ProgressAsyncTask extends AsyncTask<Void, Void, Void> {
-        boolean i = false;
 
         @Override
         protected void onPreExecute() {
@@ -262,6 +278,10 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            if(weatherData != null){
+                adapter = new RecyclerAdapter(weatherData);
+                rv.setAdapter(adapter);
+            }
             progressBar.setVisibility(View.GONE);
             progressText.setVisibility(View.GONE);
             rv.setVisibility(View.VISIBLE);

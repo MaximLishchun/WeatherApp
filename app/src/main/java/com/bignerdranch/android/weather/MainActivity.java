@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
 
     private ProgressBar progressBar;
     private TextView progressText;
-    private final long timeInMills = 3000;
+    private final long timeInMills = 5000;
 
     private Boolean exit = false;
     private CheckNetworkConnection networkConnection;
@@ -81,9 +81,7 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar1);
         progressText = (TextView) findViewById(R.id.progressText);
-
         connected();
-        Log.d("onCreate" , "onCreate");
     }
 
     @Override
@@ -103,15 +101,20 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
 //            ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
 //            progressAsyncTask.execute();
 //        }
-        if(!networkConnection.isNetworkConnected(this)){
-            Intent intentGo = new Intent(this, ConnectionActivity.class);
-            startActivity(intentGo);
-            finish();
-        } else {
+//        if(!networkConnection.isNetworkConnected(this)){
+//            Intent intentGo = new Intent(this, ConnectionActivity.class);
+//            startActivity(intentGo);
+//            finish();
+//        } else {
+        if(networkConnection.isNetworkConnected(this)){
             RetrofitConnection retrofitConnection = new RetrofitConnection();
             retrofitConnection.setOnDoResponse(this);
             ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
             progressAsyncTask.execute();
+        }else {
+            DBAsyncTask dbAsyncTask = new DBAsyncTask();
+            dbAsyncTask.execute();
+            Toast.makeText(this, "Weather from DB" , Toast.LENGTH_LONG);
         }
     }
 
@@ -209,48 +212,40 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
                 weatherData.add(new WeatherData(temperatureNextMin, iconNext, timezone,
                         summaryNext, apparentTemperatureNextMin, dateNext));
             }
-
             adapter = new RecyclerAdapter(weatherData);
             rv.setAdapter(adapter);
         }
     }
 
-    public boolean saveDataDB(){
-        if (networkConnection.isNetworkConnected(this)){
-            db = AppRoom.getInstance().getDataBase();
-            temperatureDao = db.getTemperatureDao();
-            for (int i = 0; i < weatherData.size(); i++){
-                dbTemperatureObject = new DBTemperatureObject();
-                dbTemperatureObject.temp = weatherData.get(i).getTemperature();
-                dbTemperatureObject.icon = weatherData.get(i).getIcon();
-                dbTemperatureObject.summary = weatherData.get(i).getSummary();
-                dbTemperatureObject.timezone = weatherData.get(i).getCityName();
-                dbTemperatureObject.apparentTemperature = weatherData.get(i).getApparentTemperature();
-                dbTemperatureObject.date = weatherData.get(i).getTime();
-                temperatureDao.saveTemperature(dbTemperatureObject);
-            }
-            return true;
-        }else return false;
-    }
-
-    public void setWeatherNotConnection(){
-        if(!networkConnection.isNetworkConnected(this)){
-            Intent intent = getIntent();
-            if(intent.getIntExtra(ConnectionActivity.DB, ConnectionActivity.CONNECTION_DB) == ConnectionActivity.CONNECTION_DB) {
-                List<DBTemperatureObject> dbTemperatureObjects = temperatureDao.getAllTemperature();
-                for (int i = 0; i < dbTemperatureObjects.size(); i++) {
-                    weatherData.add(new WeatherData(dbTemperatureObjects.get(i).temp, dbTemperatureObjects.get(i).icon, dbTemperatureObjects.get(i).timezone, dbTemperatureObjects.get(i).summary,
-                            dbTemperatureObjects.get(i).apparentTemperature, dbTemperatureObjects.get(i).date));
-                }
-            }
+    public void saveDataDB(){
+        Log.d("save","save");
+        db = AppRoom.getInstance().getDataBase();
+        temperatureDao = db.getTemperatureDao();
+        dbTemperatureObject = new DBTemperatureObject();
+        for (int i = 0; i < weatherData.size(); i++){
+            dbTemperatureObject.temp = weatherData.get(i).getTemperature();
+            dbTemperatureObject.icon = weatherData.get(i).getIcon();
+            dbTemperatureObject.summary = weatherData.get(i).getSummary();
+            dbTemperatureObject.timezone = weatherData.get(i).getCityName();
+            dbTemperatureObject.apparentTemperature = weatherData.get(i).getApparentTemperature();
+            dbTemperatureObject.date = weatherData.get(i).getTime();
+            temperatureDao.saveTemperature(dbTemperatureObject);
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        ProgressAsyncTask progressAsyncTask = new ProgressAsyncTask();
-        progressAsyncTask.execute();
+    public void setWeatherNotConnection(){
+        db = AppRoom.getInstance().getDataBase();
+        temperatureDao = db.getTemperatureDao();
+        if(temperatureDao.getAllTemperature() != null){
+            for (int i = 0; i < temperatureDao.getAllTemperature().size(); i++) {
+            weatherData.add(new WeatherData(temperatureDao.getAllTemperature().get(i).temp,
+                    temperatureDao.getAllTemperature().get(i).icon,
+                    temperatureDao.getAllTemperature().get(i).timezone,
+                    temperatureDao.getAllTemperature().get(i).summary,
+                    temperatureDao.getAllTemperature().get(i).apparentTemperature,
+                    temperatureDao.getAllTemperature().get(i).date));
+            }
+        }
     }
 
     private class ProgressAsyncTask extends AsyncTask<Void, Void, Void> {
@@ -265,7 +260,35 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            try {
+                Thread.sleep(timeInMills);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             saveDataDB();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            progressBar.setVisibility(View.GONE);
+            progressText.setVisibility(View.GONE);
+            rv.setVisibility(View.VISIBLE);
+        }
+    }
+    private class DBAsyncTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressBar.setVisibility(View.VISIBLE);
+            progressText.setVisibility(View.VISIBLE);
+            rv.setVisibility(View.GONE);
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
             setWeatherNotConnection();
             try {
                 Thread.sleep(timeInMills);

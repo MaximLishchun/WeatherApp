@@ -218,19 +218,26 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
     }
 
     public void saveDataDB(){
-        Log.d("save","save");
         db = AppRoom.getInstance().getDataBase();
         temperatureDao = db.getTemperatureDao();
         dbTemperatureObject = new DBTemperatureObject();
         for (int i = 0; i < weatherData.size(); i++){
-            dbTemperatureObject.temp = weatherData.get(i).getTemperature();
-            dbTemperatureObject.icon = weatherData.get(i).getIcon();
-            dbTemperatureObject.summary = weatherData.get(i).getSummary();
-            dbTemperatureObject.timezone = weatherData.get(i).getCityName();
-            dbTemperatureObject.apparentTemperature = weatherData.get(i).getApparentTemperature();
-            dbTemperatureObject.date = weatherData.get(i).getTime();
-            temperatureDao.saveTemperature(dbTemperatureObject);
+                dbTemperatureObject.temp = weatherData.get(i).getTemperature();
+                dbTemperatureObject.icon = weatherData.get(i).getIcon();
+                dbTemperatureObject.summary = weatherData.get(i).getSummary();
+                dbTemperatureObject.timezone = weatherData.get(i).getCityName();
+                dbTemperatureObject.apparentTemperature = weatherData.get(i).getApparentTemperature();
+                dbTemperatureObject.date = weatherData.get(i).getTime();
+                temperatureDao.saveTemperature(dbTemperatureObject);
         }
+    }
+
+    public void deleteDataDB(){
+        db = AppRoom.getInstance().getDataBase();
+        temperatureDao = db.getTemperatureDao();
+            for (int i = 0; i < temperatureDao.getAllTemperature().size(); i++){
+                temperatureDao.deleteTemperature(temperatureDao.getAllTemperature().get(i));
+            }
     }
 
     public void setWeatherNotConnection(){
@@ -260,12 +267,12 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            deleteDataDB();
             try {
                 Thread.sleep(timeInMills);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
             saveDataDB();
             return null;
         }
@@ -301,10 +308,10 @@ public class MainActivity extends AppCompatActivity implements OnDoResponse {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            if(weatherData != null){
-                adapter = new RecyclerAdapter(weatherData);
-                rv.setAdapter(adapter);
-            }
+
+            adapter = new RecyclerAdapter(weatherData);
+            rv.setAdapter(adapter);
+
             progressBar.setVisibility(View.GONE);
             progressText.setVisibility(View.GONE);
             rv.setVisibility(View.VISIBLE);

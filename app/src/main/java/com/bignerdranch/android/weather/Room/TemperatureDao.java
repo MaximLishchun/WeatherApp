@@ -11,7 +11,7 @@ import java.util.List;
 @Dao
 public interface TemperatureDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     void saveTemperature(DBTemperatureObject temperature);
 
     @Delete
